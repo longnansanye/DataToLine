@@ -1,9 +1,13 @@
 <template>
   <div id="app">
-    <div class="box">
-    <h3>亮度曲线图</h3>
+    <div id="hichart" class="box">
     <highcharts-component :options="options" :styles="styles" ref="simpleChart"></highcharts-component>
-    <button @click="updateChart">更新图表</button>
+    </div>
+    <div class="filebutton" align="center">
+      <input type="text" id="textfield" class="txt" />
+      <el-button type="primary" v-on:click="openFile()" round>选择文件</el-button>
+      <el-button type="primary" v-on:click="showRealPath()" round>更新文件数据</el-button>
+      <input type="file" name="filename" id="open" style="display:none" accet="csv" onchange="document.getElementById('textfield').value=this.value"/>
     </div>
   </div>
 </template>
@@ -28,6 +32,7 @@ export default {
     return {
       chart: null,
       options: {
+        title: {text: '亮度曲线图'},
         xAxis: {
           categories: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
         },
@@ -64,29 +69,34 @@ export default {
         data: [26.5, 23.3, 18.3, 13.9, 9.6, 15.0, 22, 33, 44, 55, 66, 72]
       })
     },
-    createChart() {
-      var options = {};
-      $.get('data.csv', (data) => {
+    createChart(filename) {
+      var options = {
+        xAxis: {
+          categories: []
+        },
+        series: []
+      };
+      $.get('filename', (data) => {
         // 分隔每一行
         var lines = data.split('\n');
-
+        var series = {
+          name: '',
+          data: []
+        };
         // 遍历每一行
         $.each(lines, function(lineNo, line) {
           var items = line.split(',');
           // 处理第一行，即分类
           if (lineNo === 0) {
             $.each(items, function(itemNo, item) {
-              if (itemNo > 0) {
-                options.xAxis.categories.push(item);
+              if (itemNo === 0) {
+                series.name = item; // 数据列的名字
               }
             });
           } else { // 处理其他的每一行
-            var series = {
-              data: []
-            };
             $.each(items, function(itemNo, item) {
               if (itemNo === 0) {
-                series.name = item; // 数据列的名字
+                options.xAxis.categories.push(item);
               } else {
                 series.data.push(parseFloat(item)); // 数据，记得转换成数值类型
               }
@@ -95,8 +105,7 @@ export default {
             options.series.push(series);
           }
         });
-        // create the chart
-        this.Chart = new Highcharts.Chart('container', options);
+        this.$refs.simpleChart.chart.series[0].update(options)
       });
     },
     moreChart() {
@@ -107,7 +116,16 @@ export default {
       };
       console.log('moreChart create');
 
-      this.chart = new Highcharts.Chart('highcharts-more', options);
+      this.chart = new Highcharts.Chart('hichart', options);
+    },
+    openFile() {
+      document.getElementById('open').click()
+      console.log('openFile');
+    },
+    showRealPath () {
+      console.log('showRealPath');
+      var filename = document.getElementById('textfield').value;
+      this.createChart(filename);
     }
   }
 }
