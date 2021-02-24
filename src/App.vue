@@ -1,13 +1,13 @@
 <template>
   <div id="app">
-    <div id="hichart" class="box">
+    <div class="box">
     <highcharts-component :options="options" :styles="styles" ref="simpleChart"></highcharts-component>
+    <button @click="updateChart">更新图表</button>
     </div>
     <div class="filebutton" align="center">
       <input type="text" id="textfield" class="txt" />
-      <el-button type="primary" v-on:click="openFile()" round>选择文件</el-button>
-      <el-button type="primary" v-on:click="showRealPath()" round>更新文件数据</el-button>
-      <input type="file" name="filename" id="open" style="display:none" accet="csv" onchange="document.getElementById('textfield').value=this.value"/>
+      <el-button type="primary" v-on:click="openFile()" round>选择文件更新数据</el-button>
+      <input type="file" name="filename" id="open" style="display:none" accet="csv"  onchange="document.getElementById('textfield').value=this.value" @change="loadTextFromFile"/>
     </div>
   </div>
 </template>
@@ -18,7 +18,7 @@ import HighchartsMore from 'highcharts/highcharts-more';
 import HighchartsDrilldown from 'highcharts/modules/drilldown';
 import Highcharts3D from 'highcharts/highcharts-3d';
 import Highmaps from 'highcharts/modules/map';
-import $ from 'jquery'
+
 import HighchartsComponent from './components/datatoline.vue';
 HighchartsMore(Highcharts)
 HighchartsDrilldown(Highcharts);
@@ -30,7 +30,14 @@ export default {
   data() {
     console.log('defualt');
     return {
-      chart: null,
+      chart: {
+        zoomType: 'x'
+      },
+      plotOptions: {
+        series: {
+          turboThreshold: 0 // 关闭性能阈值，解决数量超过默认1000的hicharts err:12错误
+        }
+      },
       options: {
         title: {text: '亮度曲线图'},
         xAxis: {
@@ -69,44 +76,13 @@ export default {
         data: [26.5, 23.3, 18.3, 13.9, 9.6, 15.0, 22, 33, 44, 55, 66, 72]
       })
     },
-    createChart(filename) {
-      var options = {
-        xAxis: {
-          categories: []
-        },
-        series: []
+    createChart(data) {
+      console.log(data)
+      var chart = {
+        zoomType: 'x'
       };
-      $.get('filename', (data) => {
-        // 分隔每一行
-        var lines = data.split('\n');
-        var series = {
-          name: '',
-          data: []
-        };
-        // 遍历每一行
-        $.each(lines, function(lineNo, line) {
-          var items = line.split(',');
-          // 处理第一行，即分类
-          if (lineNo === 0) {
-            $.each(items, function(itemNo, item) {
-              if (itemNo === 0) {
-                series.name = item; // 数据列的名字
-              }
-            });
-          } else { // 处理其他的每一行
-            $.each(items, function(itemNo, item) {
-              if (itemNo === 0) {
-                options.xAxis.categories.push(item);
-              } else {
-                series.data.push(parseFloat(item)); // 数据，记得转换成数值类型
-              }
-            });
-            // 最后将数据 push 到数据列配置里
-            options.series.push(series);
-          }
-        });
-        this.$refs.simpleChart.chart.series[0].update(options)
-      });
+      this.$refs.simpleChart.chart.update(data)
+      this.$refs.simpleChart.chart.update(chart)
     },
     moreChart() {
       var options = this.options;
@@ -122,10 +98,54 @@ export default {
       document.getElementById('open').click()
       console.log('openFile');
     },
-    showRealPath () {
-      console.log('showRealPath');
-      var filename = document.getElementById('textfield').value;
-      this.createChart(filename);
+    csvToObject(csvString) {
+      var csvarry = csvString.split('\r\n');
+      var options = {
+        xAxis: {
+          categories: []
+        },
+        series: []
+      };
+      var datas = [];
+      var headers = csvarry[0].split(',');
+      for (var i = 1; i < csvarry.length; i++) {
+        var data = [];
+        var temp = csvarry[i].split(',');
+        for (var j = 0; j < temp.length; j++) {
+          data.push(temp[j]);
+        }
+        datas.push(data);
+      }
+      for (i = 0; i < headers.length; i++) {
+        var series = {
+          name: '',
+          data: []
+        };
+        for (j = 0; j < csvarry.length - 1; j++) {
+          if (i === 0) {
+            options.xAxis.categories.push(datas[j][i]);
+          } else {
+            series.data.push(parseFloat(datas[j][i]));
+          }
+        }
+        if (i > 0) {
+          series.name = headers[i];
+          options.series.push(series);
+        }
+      }
+      return options;
+    },
+    loadTextFromFile(ev) {
+      const file = ev.target.files[0];
+      const reader = new FileReader();
+      reader.readAsText(file);
+      var data = [];
+      let self = this;
+      reader.onload = function() {
+        data = self.csvToObject(this.result);
+        console.log(data);
+        self.createChart(data)
+      }
     }
   }
 }
