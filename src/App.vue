@@ -78,11 +78,21 @@ export default {
     },
     createChart(data) {
       console.log(data)
-      var chart = {
-        zoomType: 'x'
-      };
-      this.$refs.simpleChart.chart.update(data)
-      this.$refs.simpleChart.chart.update(chart)
+      // 1、更新x轴数据
+      // 2、更新数据列
+      this.$refs.simpleChart.chart.xAxis[0].setCategories(data.xAxis.categories)
+      while (this.$refs.simpleChart.chart.series.length) {
+        this.$refs.simpleChart.chart.series[0].remove(false);
+      }
+      for (var i = 0; i < data.series.length; i++) {
+        this.$refs.simpleChart.chart.addSeries(data.series[i])
+      }
+      // 3、增加x轴数据缩放
+      this.$refs.simpleChart.chart.update({
+        chart: {
+          zoomType: 'x'
+        }
+      })
     },
     moreChart() {
       var options = this.options;
