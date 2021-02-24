@@ -2,7 +2,6 @@
   <div id="app">
     <div class="box">
     <highcharts-component :options="options" :styles="styles" ref="simpleChart"></highcharts-component>
-    <button @click="updateChart">更新图表</button>
     </div>
     <div class="filebutton" align="center">
       <input type="text" id="textfield" class="txt" />
@@ -58,7 +57,7 @@ export default {
         }]
       },
       styles: {
-        width: 600,
+        width: 1200,
         height: 400
       }
     }
@@ -70,12 +69,6 @@ export default {
     this.moreChart();
   },
   methods: {
-    updateChart() {
-      // 通过 refs 获取组件信息
-      this.$refs.simpleChart.chart.series[0].update({
-        data: [26.5, 23.3, 18.3, 13.9, 9.6, 15.0, 22, 33, 44, 55, 66, 72]
-      })
-    },
     createChart(data) {
       console.log(data)
       // 1、更新x轴数据
